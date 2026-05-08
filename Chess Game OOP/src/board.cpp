@@ -1,4 +1,3 @@
-Chess Game OOP\src\board.cpp
 #include "bishop.h"
 #include "game.h"
 #include "king.h"
