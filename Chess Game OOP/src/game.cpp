@@ -6,10 +6,12 @@ using namespace std;
 Game::Game() : player1("", 'W'), player2("", 'B'), current_turn('W'), game_over(false)
 {
 	string name1, name2;
+
 	cout << "Enter White player name: ";
-	cin >> name1;
+	getline(cin, name1);
+
 	cout << "Enter Black player name: ";
-	cin >> name2;
+	getline(cin, name2);
 
 	player1 = Player(name1, 'W');
 	player2 = Player(name2, 'B');
