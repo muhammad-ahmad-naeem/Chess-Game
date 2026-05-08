@@ -1,4 +1,3 @@
-Chess Game OOP\src\game.cpp
 #include "game.h"
 #include <iostream>
 #include <sstream>
