@@ -3,7 +3,17 @@
 #include <cctype>
 using namespace std;
 
-Game::Game() : current_turn('W'), game_over(false) {}
+Game::Game() : player1("", 'W'), player2("", 'B'), current_turn('W'), game_over(false)
+{
+	string name1, name2;
+	cout << "Enter White player name: ";
+	cin >> name1;
+	cout << "Enter Black player name: ";
+	cin >> name2;
+
+	player1 = Player(name1, 'W');
+	player2 = Player(name2, 'B');
+}
 
 // Convert "e2" -> row=6, col=4  (column a=0 .. h=7, rank 1=row7 .. 8=row0)
 bool Game::parse_square(const string& s, int& row, int& col) const
@@ -40,8 +50,8 @@ void Game::run()
 			{
 				char winner = (current_turn == 'W') ? 'B' : 'W';
 				cout << "CHECKMATE!  "
-				     << (winner == 'W' ? "White" : "Black")
-				     << " wins!\n";
+					<< (winner == 'W' ? "White" : "Black")
+					<< " wins!\n";
 			}
 			else
 			{
@@ -53,9 +63,16 @@ void Game::run()
 
 		if (in_check)
 			cout << ">>> " << (current_turn == 'W' ? "White" : "Black")
-			     << " is in CHECK!\n";
+			<< " is in CHECK!\n";
 
-		cout << (current_turn == 'W' ? "White" : "Black") << "'s turn > ";
+		string whose_turn = (current_turn == 'W')
+			? player1.get_name()
+			: player2.get_name();
+
+		cout << whose_turn
+			<< " ("
+			<< (current_turn == 'W' ? "White" : "Black")
+			<< ") enter move (e.g. e2 e4) or quit: ";
 
 		string from_str, to_str;
 		cin >> from_str;
