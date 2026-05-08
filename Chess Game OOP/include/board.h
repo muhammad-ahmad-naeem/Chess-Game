@@ -1,4 +1,3 @@
-Chess Game OOP\include\board.h
 #pragma once
 #include "piece.h"
 
