@@ -1,133 +1,90 @@
-#include "game.h"
+#include "Game.h"
 #include <iostream>
-#include <sstream>
 #include <cctype>
+using namespace std;
 
-Game::Game() : Board(), current_player('W') {}
+Game::Game() : current_turn('W'), game_over(false) {}
 
-Game::~Game()
+// Convert "e2" -> row=6, col=4  (column a=0 .. h=7, rank 1=row7 .. 8=row0)
+bool Game::parse_square(const string& s, int& row, int& col) const
 {
-	// cleanup allocated pieces
-	for (int i = 0; i < 8; i++)
-	{
-		for (int j = 0; j < 8; j++)
-		{
-			if (Grid[i][j] != nullptr)
-			{
-				delete Grid[i][j];
-				Grid[i][j] = nullptr;
-			}
-		}
-	}
-}
-
-void Game::play()
-{
-	std::string line;
-	while (true)
-	{
-		displayboard();
-		std::cout << "Current player: " << current_player << "  (enter move like e2 e4 or 'exit')\n> ";
-		if (!std::getline(std::cin, line))
-			break;
-
-		if (line == "exit" || line == "quit")
-			break;
-
-		std::istringstream iss(line);
-		std::string from, to;
-		if (!(iss >> from >> to))
-		{
-			std::cout << "Invalid input. Use format: <from> <to> (e.g. e2 e4)\n";
-			continue;
-		}
-
-		if (!make_move(from, to))
-		{
-			std::cout << "Move failed. Try again.\n";
-			continue;
-		}
-	}
-}
-
-bool Game::make_move(const std::string& from, const std::string& to)
-{
-	int fr, fc, tr, tc;
-	if (!parse_pos(from, fr, fc) || !parse_pos(to, tr, tc))
-	{
-		std::cout << "Invalid square format. Use a-h and 1-8.\n";
-		return false;
-	}
-	return move_piece(fr, fc, tr, tc);
-}
-
-bool Game::move_piece(int fr, int fc, int tr, int tc)
-{
-	// bounds already validated by parse_pos but double-check
-	if (fr < 0 || fr > 7 || fc < 0 || fc > 7 || tr < 0 || tr > 7 || tc < 0 || tc > 7)
-		return false;
-
-	Piece* p = Grid[fr][fc];
-	if (p == nullptr)
-	{
-		std::cout << "No piece at source square.\n";
-		return false;
-	}
-	if (p->get_colour() != current_player)
-	{
-		std::cout << "That's not your piece.\n";
-		return false;
-	}
-	// ask piece if move is valid (uses current piece position internally)
-	if (!p->valid_move(tr, tc, Grid))
-	{
-		std::cout << "Piece cannot move like that.\n";
-		return false;
-	}
-	// cannot capture own piece (piece->valid_move should have checked, but double-check)
-	if (Grid[tr][tc] != nullptr && Grid[tr][tc]->get_colour() == p->get_colour())
-	{
-		std::cout << "Destination occupied by your own piece.\n";
-		return false;
-	}
-
-	// capture if enemy present
-	if (Grid[tr][tc] != nullptr)
-	{
-		// detect king capture to end game
-		if (Grid[tr][tc]->get_symbol() == 'K')
-		{
-			std::cout << "King captured! Player " << current_player << " wins.\n";
-		}
-		delete Grid[tr][tc];
-		Grid[tr][tc] = nullptr;
-	}
-
-	// move piece
-	Grid[tr][tc] = p;
-	Grid[fr][fc] = nullptr;
-	p->set_position(tr, tc);
-
-	// switch turn
-	switch_turn();
-	return true;
-}
-
-bool Game::parse_pos(const std::string& s, int& r, int& c)
-{
-	if (s.size() != 2)
-		return false;
-	char file = std::tolower(s[0]);
+	if (s.size() < 2) return false;
+	char file = tolower(s[0]);
 	char rank = s[1];
-	if (file < 'a' || file > 'h' || rank < '1' || rank > '8')
-		return false;
-	c = file - 'a';
-	// board row 0 is rank 8, row 7 is rank 1
-	r = 8 - (rank - '0');
+	if (file < 'a' || file > 'h') return false;
+	if (rank < '1' || rank > '8') return false;
+	col = file - 'a';
+	row = 8 - (rank - '0');
 	return true;
 }
 
-void Game::switch_turn()
+void Game::run()
 {
-	current_player = (current_player == 'W') ? 'B' : 'W';
+	cout << "========================================\n";
+	cout << "     CHESS — OOP Lab Project  NUCES\n";
+	cout << "========================================\n";
+	cout << "  Enter moves like:  e2 e4   (from  to)\n";
+	cout << "  Type 'quit' to exit.\n\n";
+
+	while (!game_over)
+	{
+		board.display();
+
+		// ── Check / Checkmate / Stalemate detection ───────────────────────
+		bool in_check = board.is_in_check(current_turn);
+		bool no_moves = board.has_no_legal_moves(current_turn);
+
+		if (no_moves)
+		{
+			if (in_check)
+			{
+				char winner = (current_turn == 'W') ? 'B' : 'W';
+				cout << "CHECKMATE!  "
+				     << (winner == 'W' ? "White" : "Black")
+				     << " wins!\n";
+			}
+			else
+			{
+				cout << "STALEMATE!  It's a draw.\n";
+			}
+			game_over = true;
+			break;
+		}
+
+		if (in_check)
+			cout << ">>> " << (current_turn == 'W' ? "White" : "Black")
+			     << " is in CHECK!\n";
+
+		cout << (current_turn == 'W' ? "White" : "Black") << "'s turn > ";
+
+		string from_str, to_str;
+		cin >> from_str;
+
+		if (from_str == "quit")
+		{
+			cout << "Game ended by player.\n";
+			break;
+		}
+
+		cin >> to_str;
+
+		int fr, fc, tr, tc;
+		if (!parse_square(from_str, fr, fc) || !parse_square(to_str, tr, tc))
+		{
+			cout << "  Bad input. Use format like: e2 e4\n";
+			continue;
+		}
+
+		if (!board.make_move(fr, fc, tr, tc, current_turn))
+		{
+			cout << "  Illegal move! Try again.\n";
+			continue;
+		}
+
+		// Flip turn
+		current_turn = (current_turn == 'W') ? 'B' : 'W';
+	}
+
+	board.display();
+	cout << "Thanks for playing!\n";
 }
